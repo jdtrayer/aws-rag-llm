@@ -13,3 +13,7 @@ output "s3_bucket_name" {
   description = "the s3 bucket name"
   value = aws_s3_bucket.docs.bucket
 }
+
+output "knowledge_base_arn" {
+  value = aws_bedrockknowledge_knowledge_base.rag_kb.arn
+}

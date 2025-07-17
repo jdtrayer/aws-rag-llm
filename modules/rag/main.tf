@@ -155,3 +155,75 @@ resource "aws_api_gateway_usage_plan_key" "usage_plan_key" {
   key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.usage_plan.id
 }
+
+resource "aws_iam_role" "bedrock_kb_role" {
+  name = "${var.environment}-bedrock-kb-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "bedrock.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_policy" "bedrock_kb_policy" {
+  name = "${var.environment}-bedrock-kb-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          aws_s3_bucket.docs.arn,
+          "${aws_s3_bucket.docs.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "bedrock_kb_policy_attachment" {
+  role       = aws_iam_role.bedrock_kb_role.name
+  policy_arn = aws_iam_policy.bedrock_kb_policy.arn
+}
+
+resource "aws_bedrockknowledge_knowledge_base" "rag_kb" {
+  name     = "${var.environment}-rag-kb"
+  role_arn = aws_iam_role.bedrock_kb_role.arn
+
+  knowledge_base_configuration {
+    type = "VECTOR"
+
+    vector_knowledge_base_configuration {
+      embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1"
+    }
+  }
+
+  data_source {
+    name = "${var.environment}-s3-docs"
+    type = "S3"
+
+    s3_configuration {
+      bucket_arn          = aws_s3_bucket.docs.arn
+      inclusion_prefixes  = ["docs/"]
+    }
+
+    vector_data_source_configuration {
+      type = "BEDROCK_EMBEDDING"
+
+      bedrock_embedding_configuration {
+        embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1"
+      }
+    }
+  }
+}
