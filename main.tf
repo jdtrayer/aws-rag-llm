@@ -18,3 +18,9 @@ module "rag_infra" {
   lambda_package_path = var.lambda_package_path
   aws_region         = var.aws_region
 }
+
+module "scraper" {
+  source = "./modules/scraper"
+  lambda_scraper_package_path = var.lambda_scraper_package_path
+  s3_bucket_name = module.rag_infra.s3_bucket_name
+}

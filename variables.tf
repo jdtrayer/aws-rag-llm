@@ -16,3 +16,8 @@ variable "lambda_package_path" {
   description = "Path to zipped Lambda deployment package"
   type        = string
 }
+
+variable "lambda_scraper_package_path" {
+  description = "Path to zipped Lambda deployment package"
+  type        = string
+}
